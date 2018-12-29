@@ -1,3 +1,4 @@
+import logging
 from redis import StrictRedis
 
 
@@ -5,6 +6,9 @@ from redis import StrictRedis
 class Config(object):
     """自定义配置类,将配置信息以属性的方式罗列即可"""
     DEBUG = True
+
+    # 默认日志等级
+    LOG_LEVEL = logging.DEBUG
 
     # mysql数据库配置信息
     # 连接mysql数据库的配置
@@ -35,11 +39,15 @@ class Config(object):
 class DevelopmentConfig(Config):
     """开发模式的配置类"""
     DEBUG = True
+    # 设置开发模式的日志级别
+    # LOG_LEVEL = logging.DEBUG
 
 
 class ProductionConfig(Config):
     """生产(线上)模式的配置类"""
     DEBUG = False
+    # 设置线上模式的日志级别
+    LOG_LEVEL = logging.ERROR
 
 
 # 给外界使用提供一个接口
