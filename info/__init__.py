@@ -92,5 +92,10 @@ def create_app(config_name):
     # 5.借助session调整flask.session的存储位置到redis中存储
     Session(app)
 
+    # 6.注册首页蓝图
+    # 将蓝图的导入延迟到工厂方法中,真正需要注册蓝图的时候再导入,能够解决循环导入的问题
+    from info.modules.index import index_bp
+    app.register_blueprint(index_bp)
+
     # return app, db, redis_store
     return app
