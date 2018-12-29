@@ -2,3 +2,5 @@
 *.py[cod]
 logs/*
 !.gitkeep
+*.mdj
+migrations
