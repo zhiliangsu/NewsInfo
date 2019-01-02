@@ -1,8 +1,7 @@
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 from info import create_app, db, models
-from pymysql import install_as_MySQLdb
-install_as_MySQLdb()
+
 
 # 从单一职责的原则考虑,manage文件单独作为项目启动文件即可,其他配置可以抽取出去
 # app, db, redis_store = create_app("development")

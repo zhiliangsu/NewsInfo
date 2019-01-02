@@ -3,6 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from info import constants
 from . import db
+from pymysql import install_as_MySQLdb
+install_as_MySQLdb()
 
 
 class BaseModel(object):

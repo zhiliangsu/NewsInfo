@@ -2,6 +2,7 @@ from info.modules.index import index_bp
 import logging
 from flask import current_app, render_template
 from info import redis_store
+from info.models import User
 
 
 @index_bp.route('/')
@@ -19,7 +20,7 @@ def index():
 
     # flask中记录日志方法(项目使用这种方式记录)
     current_app.logger.debug("flash记录debug信息")
-
+    # 返回渲染模板文件
     return render_template("news/index.html")
 
 
