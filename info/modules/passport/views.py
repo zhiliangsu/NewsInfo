@@ -50,7 +50,7 @@ def get_image_code():
 
 
 # post请求地址: /passport/sms_code, 参数使用请求体携带
-@passport_bp.route('/sms_code')
+@passport_bp.route('/sms_code', methods=['POST'])
 def send_sms_code():
     """发送短信验证码后端接口"""
 

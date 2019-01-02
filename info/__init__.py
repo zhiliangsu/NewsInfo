@@ -87,7 +87,7 @@ def create_app(config_name):
         2.提取表单中的csrf_token的值,或者ajax请求头中的X-CSRFToken键对应的值
         3.对比这两个值是否相等
     """
-    CSRFProtect(app)
+    # CSRFProtect(app)
 
     # 5.借助session调整flask.session的存储位置到redis中存储
     Session(app)
