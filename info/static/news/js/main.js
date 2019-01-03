@@ -340,3 +340,22 @@ function generateUUID() {
     });
     return uuid;
 }
+
+
+// 前端退出登录请求
+function logout() {
+    $.ajax({
+        url: "/passport/logout",
+        type: "post",
+        headers: {
+            "X-CSRFToken": getCookie("csrf_token")
+        },
+        success:function (resp) {
+            if(resp.errno == 0){
+                window.location.reload()
+            } else {
+
+            }
+        }
+    })
+}

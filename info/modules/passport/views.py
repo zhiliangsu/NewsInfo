@@ -312,3 +312,16 @@ def login():
 
     # 返回登录成功
     return jsonify(errno=RET.OK, errmsg="登录成功")
+
+
+# post请求地址: /passport/logout, 参数使用请求体携带
+@passport_bp.route('/logout', methods=['POST'])
+def logout():
+    """退出登录接口"""
+
+    # 删除session中的用户数据即可
+    session.pop("user_id", None)
+    session.pop("mobile", None)
+    session.pop("nick_name", None)
+
+    return jsonify(errno=RET.OK, errmsg="退出登录成功")
