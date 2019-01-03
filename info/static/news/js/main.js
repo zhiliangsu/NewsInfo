@@ -128,6 +128,9 @@ $(function(){
             data: JSON.stringify(params),
             contentType: "application/json",
             dataType: "json",
+            headers: {
+                "X-CSRFToken": getCookie("csrf_token")
+            },
             success:function (resp) {
                 if(resp.errno == 0){
                     // 登录成功, 刷新当前页面
@@ -184,6 +187,9 @@ $(function(){
             data: JSON.stringify(params),
             contentType: "application/json",
             dataType: "json",
+            headers: {
+                "X-CSRFToken": getCookie("csrf_token")
+            },
             success: function (resp) {
                 if (resp.errno == "0"){
                     // 注册成功, 刷新当前界面
@@ -255,6 +261,9 @@ function sendSMSCode() {
         contentType: "application/json",
         // 获取后端的数据是json格式
         dataType: "json",
+        headers: {
+                "X-CSRFToken": getCookie("csrf_token")
+        },
         // resp是一个js对象
         success: function (resp) {
             // console.log(resp)

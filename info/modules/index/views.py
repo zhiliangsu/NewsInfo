@@ -41,13 +41,8 @@ def index():
     data = {
         "user_info": user_dict
     }
-    test = {
-        "id": "003",
-        "name": "curry",
-        "number": "30"
-    }
 
-    return render_template("news/index.html", data=data, test=test)
+    return render_template("news/index.html", data=data)
 
 
 @index_bp.route('/favicon.ico')

@@ -2,7 +2,7 @@ from flask import Flask
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from redis import StrictRedis
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from config import config_dict
 import logging
 from logging.handlers import RotatingFileHandler
@@ -87,7 +87,17 @@ def create_app(config_name):
         2.提取表单中的csrf_token的值,或者ajax请求头中的X-CSRFToken键对应的值
         3.对比这两个值是否相等
     """
-    # CSRFProtect(app)
+    CSRFProtect(app)
+
+    # 在每一次请求之后,都设置一个csrf_token值
+    @app.after_request
+    def set_csrf_token(response):
+        # 1.生成csrf_token随机值
+        csrf_token = generate_csrf()
+        # 2.借助响应对象将csrf_token保存到cookie中
+        response.set_cookie("csrf_token", csrf_token)
+        # 3.将响应对象返回
+        return response
 
     # 5.借助session调整flask.session的存储位置到redis中存储
     Session(app)
