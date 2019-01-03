@@ -38,10 +38,10 @@ def get_image_code():
 
     # 3.2 code_id作为key将验证码图片的真实值保存到redis数据库，并且设置有效时长(5分钟)
     try:
-        redis_store.setex("CODEID_" + code_id, constants.IMAGE_CODE_REDIS_EXPIRES, real_image_code)
+        redis_store.setex("CODEID_%s" % code_id, constants.IMAGE_CODE_REDIS_EXPIRES, real_image_code)
     except Exception as e:
         current_app.logger.error(e)
-        return make_response(jsonify(error=RET.DATAERR, errmsg="保存图片验证码失败"))
+        return make_response(jsonify(errno=RET.DATAERR, errmsg="保存图片验证码失败"))
 
     # 4.1 返回验证码图片
     resp = make_response(image_data)
@@ -103,7 +103,7 @@ def send_sms_code():
 
     # 3.1 根据image_code_id编号去redis数据库获取真实的图片验证码值real_image_code
     try:
-        real_image_code = redis_store.get("CODEID_" + image_code_id)
+        real_image_code = redis_store.get("CODEID_%s" % image_code_id)
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg="获取真实的图片验证码错误")
@@ -115,7 +115,7 @@ def send_sms_code():
     # 3.1.2 real_image_code有值： 将图片验证码从redis中删除（防止多次使用同一个验证码来进行多次验证码）
     else:
         try:
-            redis_store.delete("CODEID_" + image_code_id)
+            redis_store.delete("CODEID_%s" % image_code_id)
         except Exception as e:
             current_app.logger.error(e)
             return jsonify(errno=RET.DBERR, errmsg="删除真实的图片验证码异常")
@@ -148,7 +148,7 @@ def send_sms_code():
 
     # 3.3.2 调用CCP类中方法发送短信验证码
     # 参数1: 手机号码 参数2: {6位短信验证码, 5分钟过期时长} 参数3:模板编号
-    result = CCP().send_template_sms("15919152089", {sms_code, constants.SMS_CODE_REDIS_EXPIRES / 60}, 1)
+    result = CCP().send_template_sms(mobile, {sms_code, int(constants.SMS_CODE_REDIS_EXPIRES / 60)}, 1)
 
     if result == -1:
         # 3.3.3 发送短信验证码失败：提示前端重新发送

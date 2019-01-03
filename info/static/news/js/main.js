@@ -194,7 +194,7 @@ function sendSMSCode() {
     // 组织请求参数 js对象
     var params = {
         "mobile": mobile,
-        "image_coe": imageCode,
+        "image_code": imageCode,
         "image_code_id": imageCodeId
     };
 
@@ -209,19 +209,20 @@ function sendSMSCode() {
         type: "POST",
         // 请求数据
         data: param_json,
-        // 获取后端的数据是json格式
-        dataType: "json",
         // 告知后端请求数据json格式
         contentType: "application/json",
+        // 获取后端的数据是json格式
+        dataType: "json",
         // resp是一个js对象
         success: function (resp) {
-            if(resp.errno = 0){
+            // console.log(resp)
+            if(resp.errno == 0){
                 // 发送短信验证码成功的回调
                 // 倒计时60秒, 60秒后允许用户再次点击发送短信验证码的按钮
                 var num = 60;
                 // 设置一个计时器
                 var t = setInterval(function () {
-                    if(num==1){
+                    if(num == 1){
                         // 如果计时器到最后,清除计时器对象
                         clearInterval(t);
                         // 将点击获取验证码的按钮展示的文本回复成原始文本
@@ -242,7 +243,7 @@ function sendSMSCode() {
                 // 将点击按钮的onclick事件函数恢复回去
                 $(".get_code").attr("onclick", "sendSMSCode();");
                 // 如果错误码是4004,代表验证码错误,重新生成验证码
-                if(resp.errno=="4004"){
+                if(resp.errno == 4004){
                     // 图片验证码填写错误,再次生成一张新的图片验证码即可
                     generateImageCode()
                 }
