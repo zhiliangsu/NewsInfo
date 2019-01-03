@@ -1,5 +1,5 @@
 from info import constants
-from info.models import User, News
+from info.models import User, News, Category
 from info.modules.index import index_bp
 from flask import current_app, render_template, session, jsonify
 
@@ -40,6 +40,18 @@ def index():
     for news in news_rank_list if news_rank_list else []:
         news_dict_list.append(news.to_dict())
 
+    # -----------------3.查询新闻分类数据展示---------------
+    try:
+        categories = Category.query.all()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询分类对象异常")
+
+    category_dict_list = []
+    # 将分类列表对象列表转成字典列表
+    for category in categories if categories else []:
+        category_dict_list.append(category.to_dict())
+
     # 4. 组织响应数据
     """
     数据格式:
@@ -53,7 +65,8 @@ def index():
     """
     data = {
         "user_info": user_dict,
-        "click_news_list": news_dict_list
+        "click_news_list": news_dict_list,
+        "categories": category_dict_list
     }
 
     return render_template("news/index.html", data=data)
