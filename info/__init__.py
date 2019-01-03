@@ -6,8 +6,11 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from config import config_dict
 import logging
 from logging.handlers import RotatingFileHandler
+from info.utils.common import do_index_class
+
 
 # 只是申明了db对象而已,并没有做真实的数据库初始化操作
+
 db = SQLAlchemy()
 
 # 将redis_store对象申明为全局变量
@@ -98,6 +101,9 @@ def create_app(config_name):
         response.set_cookie("csrf_token", csrf_token)
         # 3.将响应对象返回
         return response
+
+    # 添加自定义过滤器
+    app.add_template_filter(do_index_class, "do_index_class")
 
     # 5.借助session调整flask.session的存储位置到redis中存储
     Session(app)
