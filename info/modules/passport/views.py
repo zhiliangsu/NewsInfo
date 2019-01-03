@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import request, current_app, abort, make_response, jsonify, session
 from info import redis_store, constants, db
 from info.lib.yuntongxun.sms import CCP
@@ -7,6 +5,7 @@ from info.models import User
 from info.utils.captcha.captcha import captcha
 from info.utils.response_code import RET
 from . import passport_bp
+from datetime import datetime
 import re
 
 
@@ -103,6 +102,7 @@ def send_sms_code():
         return jsonify(errno=RET.PARAMERR, errmsg="手机号码格式错误")
 
     # 3.1 根据image_code_id编号去redis数据库获取真实的图片验证码值real_image_code
+    real_image_code = None
     try:
         real_image_code = redis_store.get("CODEID_%s" % image_code_id)
     except Exception as e:
@@ -250,6 +250,65 @@ def register():
     return jsonify(errno=RET.OK, errmsg="注册成功")
 
 
+# post请求地址: /passport/login, 参数使用请求体携带
+@passport_bp.route('/login', methods=['POST'])
+def login():
+    """用户登录的后端接口"""
+    """
+    1.获取参数
+        1.1 mobile:手机号码， password：未加密的密码
+    2.校验参数
+        2.1 非空判断
+        2.2 手机号码格式判断
+    3.逻辑处理
+        3.1 根据手机号码去查询当前用户user
+        3.2 使用user对象判断用户填写的密码是否跟数据库里的一致
+        3.3 使用session记录用户登录信息
+        3.4 修改用户最后一次登录时间
+    4.返回值
+    """
+    # 获取参数
+    params_dict = request.json
+    mobile = params_dict.get("mobile")
+    password = params_dict.get("password")
 
+    # 参数校验
+    if not all([mobile, password]):
+        current_app.logger.error("参数不足")
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
 
+    if not re.match("^1[345678][0-9]{9}$", mobile):
+        current_app.logger.error("手机号码格式错误")
+        return jsonify(errno=RET.PARAMERR, errmsg="手机号码格式错误")
 
+    # 逻辑处理
+    try:
+        user = User.query.filter(User.mobile == mobile).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户对象异常")
+
+    if not user:
+        return jsonify(errno=RET.NODATA, errmsg="用户不存在")
+
+    if not user.check_passowrd(password):
+        return jsonify(errno=RET.DATAERR, errmsg="密码填写错误")
+
+    # 3.3 使用session记录用户登录信息
+    session["user_id"] = user.id
+    session["nick_name"] = user.nick_name
+    session["mobile"] = user.mobile
+
+    # 3.4 修改用户最后一次登录时间
+    user.last_login = datetime.now()
+
+    # 保存回数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存用户对象到数据库异常")
+
+    # 返回登录成功
+    return jsonify(errno=RET.OK, errmsg="登录成功")
