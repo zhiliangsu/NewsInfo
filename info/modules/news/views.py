@@ -39,7 +39,7 @@ def news_comment():
 
     # 3.逻辑处理
     try:
-        news = News.query.get("news_id")
+        news = News.query.get(news_id)
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
