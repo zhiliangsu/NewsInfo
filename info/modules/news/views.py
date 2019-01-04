@@ -1,26 +1,20 @@
 from info import constants
-from info.models import User, News
+from info.models import News
+from info.utils.common import get_user_data
 from info.utils.response_code import RET
 from . import news_bp
-from flask import render_template, session, current_app, jsonify
+from flask import render_template, current_app, jsonify, g
 
 
 # 127.0.0.1:5000/news/news_id  news_id:新闻对应的id地址
 @news_bp.route('/<int:news_id>')
+@get_user_data
 def news_detail(news_id):
     """新闻详情页展示"""
 
     # -----------------1.用户登录成功,查询用户基本信息展示---------------
-    # 1. 获取用户的id
-    user_id = session.get("user_id")
-
-    # 2. 根据user_id查询当前登录的用户对象
-    user = None
-    try:
-        user = User.query.get(user_id)
-    except Exception as e:
-        current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg="查询用户对象异常")
+    # 使用g对象传递user对象数据
+    user = g.user
 
     # 3. 将用户对象转成字典
     user_dict = user.to_dict() if user else None
