@@ -117,5 +117,9 @@ def create_app(config_name):
     from info.modules.passport import passport_bp
     app.register_blueprint(passport_bp)
 
+    # 新闻详情页模块的蓝图
+    from info.modules.news import news_bp
+    app.register_blueprint(news_bp)
+
     # return app, db, redis_store
     return app
