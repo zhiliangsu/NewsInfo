@@ -3,7 +3,7 @@ from info.models import News
 from info.utils.common import get_user_data
 from info.utils.response_code import RET
 from . import news_bp
-from flask import render_template, current_app, jsonify, g
+from flask import render_template, current_app, jsonify, g, abort
 
 
 # 127.0.0.1:5000/news/news_id  news_id:新闻对应的id地址
@@ -31,9 +31,23 @@ def news_detail(news_id):
     for news in news_rank_list if news_rank_list else None:
         news_dict_list.append(news.to_dict())
 
+    # -----------------3.根据新闻id查询新闻详情数据展示----------------------
+    news_obj = None
+    if news_id:
+        try:
+            news_obj = News.query.get(news_id)
+        except Exception as e:
+            current_app.logger.error(e)
+            abort(404)
+            return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+    # 新闻对象转字典
+    news_dict = news_obj.to_dict() if news_obj else None
+
     # 组织响应数据
     data = {
         "user_info": user_dict,
-        "click_news_list": news_dict_list
+        "click_news_list": news_dict_list,
+        "news": news_dict
     }
     return render_template("news/detail.html", data=data)
