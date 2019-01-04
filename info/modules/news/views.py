@@ -1,9 +1,73 @@
-from info import constants
+from info import constants, db
 from info.models import News
 from info.utils.common import get_user_data
 from info.utils.response_code import RET
 from . import news_bp
-from flask import render_template, current_app, jsonify, g, abort
+from flask import render_template, current_app, jsonify, g, abort, request
+
+
+# POST请求地址: 127.0.0.1:5000/news/news_collect  参数由请求体携带
+@news_bp.route('/news_collect', methods=["POST"])
+@get_user_data
+def news_collect():
+    """新闻收藏、取消收藏的后端接口"""
+    """
+    1.获取参数
+        1.1 news_id:当前新闻的id，user:当前登录的用户对象，action:收藏，取消收藏的行为
+    2.参数校验
+        2.1 非空判断
+        2.2 action in ["collect", "cancel_collect"]
+    3.逻辑处理
+        3.1 根据新闻id查询当前新闻对象，判断新闻是否存在
+        3.2 收藏：将新闻对象添加到user.collection_news列表中
+        3.3 取消收藏：将新闻对象从user.collection_news列表中移除
+    4.返回值
+    """
+
+    # 1.获取参数
+    params_dict = request.json
+    news_id = params_dict.get("news_id")
+    action = params_dict.get("action")
+    user = g.user
+
+    # 2.参数校验
+    if not all([news_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    if action not in ["collect", "cancel_collect"]:
+        return jsonify(errno=RET.PARAMERR, errmsg="参数错误")
+
+    # 3.逻辑处理
+    news_obj = None
+    try:
+        news_obj = News.query.get(news_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+    if not news_obj:
+        return jsonify(errno=RET.NODATA, errmsg="新闻不存在")
+
+    if action == "collect":
+        user.collection_news.append(news_obj)
+    else:
+        # 新闻已经被用户收藏的情况才允许取消收藏
+        if news_obj in user.collection_news:
+            user.collection_news.remove(news_obj)
+
+    # 将数据提交数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存新闻收藏数据异常")
+
+    # 4.返回值
+    return jsonify(errno=RET.OK, errmsg="收藏操作成功")
 
 
 # 127.0.0.1:5000/news/news_id  news_id:新闻对应的id地址
@@ -48,12 +112,14 @@ def news_detail(news_id):
     # 标识当前用户是否收藏当前新闻, 默认值:false没有收藏
     is_collected = False
 
-    # user.collection_news: 当前用户对象收藏的新闻列表
-    # news_obj: 当前新闻对象
-    # 判断当前新闻对象是否在当前用户对象的新闻收藏类别中
-    if news_obj in user.collection_news:
-        # 标识当前用户已经收藏该新闻
-        is_collected = True
+    # 防止退出登录后,user.collection_news没有值导致报错
+    if user:
+        # user.collection_news: 当前用户对象收藏的新闻列表
+        # news_obj: 当前新闻对象
+        # 判断当前新闻对象是否在当前用户对象的新闻收藏类别中
+        if news_obj in user.collection_news:
+            # 标识当前用户已经收藏该新闻
+            is_collected = True
 
     # 组织响应数据
     data = {
