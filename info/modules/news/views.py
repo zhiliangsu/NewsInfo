@@ -188,11 +188,24 @@ def news_detail(news_id):
             # 标识当前用户已经收藏该新闻
             is_collected = True
 
+    # -----------------5.查询评论列表数据展示----------------------
+    comment_list = None
+    try:
+        comment_list = Comment.query.filter(Comment.news_id == news_id).order_by(Comment.create_time.desc()).all()
+    except Exception as e:
+        current_app.logger.error(e)
+
+    # 评论对象列表转化成字典列表
+    comment_dict_list = []
+    for comment in comment_list if comment_list else None:
+        comment_dict_list.append(comment.to_dict())
+
     # 组织响应数据
     data = {
         "user_info": user_dict,
         "click_news_list": news_dict_list,
         "news": news_dict,
-        "is_collected": is_collected
+        "is_collected": is_collected,
+        "comments": comment_dict_list
     }
     return render_template("news/detail.html", data=data)
