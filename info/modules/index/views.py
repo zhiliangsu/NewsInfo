@@ -43,10 +43,16 @@ def get_news_list():
     current_page = 1
     total_page = 1
 
+    # 查询条件列表
+    filter_list = []
+    if cid != 1:
+        # 将查询条件添加到列表中
+        filter_list.append(News.category_id == cid)
+
     # 3.1 根据cid作为查询条件, 新闻的时间降序排序, 进行分页查询
     # paginate(): 参数1: 当前页码, 参数2: 每一页多少条数据, 参数3: 不需要错误参数,使用try捕获
     try:
-        paginate = News.query.filter(News.category_id == cid).order_by(News.create_time.desc()).paginate(p, per_page, False)
+        paginate = News.query.filter(*filter_list).order_by(News.create_time.desc()).paginate(p, per_page, False)
         # 获取所有数据
         news_list = paginate.items
         # 获取当前页码
@@ -65,7 +71,7 @@ def get_news_list():
 
     # 组织返回数据
     data = {
-        "news_list": news_list,
+        "news_list": news_dict_list,
         "current_page": current_page,
         "total_page": total_page
     }
