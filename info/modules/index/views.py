@@ -23,7 +23,7 @@ def get_news_list():
 
     # 1.获取参数
     cid = request.args.get("cid")
-    p = request.args.get("p", 1)
+    p = request.args.get("page", 1)
     per_page = request.args.get("per_page", 10)
 
     # 2.参数校验
