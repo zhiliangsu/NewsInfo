@@ -58,31 +58,39 @@
 
             {% endblock %}
 
-            <div class="rank_title">
-                <h3>点击排行</h3>
+            {# 6.点击排行在404页面内容不同，需要在404页面中重写rankBlock #}
+            {% block rankBlock %}
+                <div class="rank_title">
+                    <h3>点击排行</h3>
+                </div>
+                <ul class="rank_list">
+                    {% for news in data.click_news_list %}
+                        <li><span class="{{ loop.index | do_index_class }}">{{ loop.index }}</span><a href="/news/{{ news.id }}">{{ news.title }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endblock %}
+        </div>
+    </div>
+
+    {# 7.底部信息在404页面内容不同，需要在404页面中重写footerBlock #}
+    {% block footerBlock %}
+        <div class="footer">
+            <div class="footer_links">
+                <a href="">关于我们</a>
+                <span>|</span>
+                <a href="">联系我们</a>
+                <span>|</span>
+                <a href="">招聘人才</a>
+                <span>|</span>
+                <a href="">友情链接</a>
             </div>
-            <ul class="rank_list">
-                {% for news in data.click_news_list %}
-                    <li><span class="{{ loop.index | do_index_class }}">{{ loop.index }}</span><a href="/news/{{ news.id }}">{{ news.title }}</a></li>
-                {% endfor %}
-            </ul>
+            <p class="copyright">
+                CopyRight © 2018 新经资讯信息技术有限公司 All Rights Reserved<br />
+    电话：010-****888    京ICP备*******8号
+            </p>
         </div>
-    </div>
-    <div class="footer">
-        <div class="footer_links">
-            <a href="">关于我们</a>
-            <span>|</span>
-            <a href="">联系我们</a>
-            <span>|</span>
-            <a href="">招聘人才</a>
-            <span>|</span>
-            <a href="">友情链接</a>
-        </div>
-        <p class="copyright">
-            CopyRight © 2018 新经资讯信息技术有限公司 All Rights Reserved<br />
-电话：010-****888    京ICP备*******8号
-        </p>
-    </div>
+    {% endblock %}
+
 
     <!-- 登录表单 -->
     <form class="login_form_con">

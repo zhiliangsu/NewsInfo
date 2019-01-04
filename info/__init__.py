@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template, g
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from redis import StrictRedis
@@ -6,8 +6,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from config import config_dict
 import logging
 from logging.handlers import RotatingFileHandler
-from info.utils.common import do_index_class
-
+from info.utils.common import do_index_class, get_user_data
 
 # 只是申明了db对象而已,并没有做真实的数据库初始化操作
 
@@ -101,6 +100,21 @@ def create_app(config_name):
         response.set_cookie("csrf_token", csrf_token)
         # 3.将响应对象返回
         return response
+
+    # 捕获404异常,返回统一404页面
+    @app.errorhandler(404)
+    @get_user_data
+    def handle_404_not_found(e):
+
+        # 1.查询用户基本信息
+        user = g.user
+
+        data = {
+            "user_info": user.to_dict() if user else None
+        }
+
+        # 返回404模板数据,同时传入用户信息
+        return render_template("news/404.html", data=data)
 
     # 添加自定义过滤器
     app.add_template_filter(do_index_class, "do_index_class")

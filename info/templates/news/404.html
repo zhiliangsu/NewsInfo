@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{# 1.标题不同,重写titleBlock #}
+{% block titleBlock %}
+    <title>404</title>
+{% endblock %}
+
+{# 4.导入分类数据不同，重写categoryBlock #}
+{% block categoryBlock %}
+
+{% endblock %}
+
+{# 3.内容不同,重写contentBlock #}
+{% block contentBlock %}
+    <div class="error_con">
+        <img src="../../static/news/images/not_found.png" alt="404">
+        <h3>OOPS!</h3>
+        <h4>该内容不存在</h4>
+        <p>请检查你输入的网址是否正确，请点击以下按钮返回主页或者发送错误报告</p>
+        {# 反向解析函数： 前一个index：蓝图名称，后一个index：函数名称 #}
+        <a href="{{ url_for("index.index") }}">返回首页</a>
+    </div>
+{% endblock %}
+
+{# 6.点击排行在404页面内容不同，需要在404页面中重写rankBlock #}
+{% block rankBlock %}
+
+{% endblock %}
+
+{# 7.底部信息在404页面内容不同，需要在404页面中重写footerBlock #}
+{% block footerBlock %}
+
+{% endblock %}
