@@ -105,6 +105,9 @@ def news_detail(news_id):
             abort(404)
             return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
 
+    # 将新闻对象的点击量累加
+    news_obj.click += 1
+
     # 新闻对象转字典
     news_dict = news_obj.to_dict() if news_obj else None
 

@@ -15,6 +15,8 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "mysql://root:mysql@localhost:3306/NewsInfo"
     # 开启数据库跟踪模式
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    # 开启数据库自动提交功能
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = True
 
     # redis数据库配置信息
     REDIS_HOST = "localhost"
