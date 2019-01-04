@@ -1,5 +1,6 @@
 from flask import session, current_app, jsonify, g
 from info.utils.response_code import RET
+import functools
 
 
 # 过滤器的本质是函数
@@ -15,10 +16,19 @@ def do_index_class(index):
         return ""
 
 
+"""
+问题: 只要使用装饰器装饰函数,装饰器会改变函数的函数名称&函数的内部注释
+
+解决方案: 1. 导入import functools
+         2. @functools.wraps(func)装饰到wrapper内层装饰器函数上
+"""
+
+
 # 使用装饰器封装登录成功获取用户对象
 # 传入参数: view_func被装饰的视图函数名称
 def get_user_data(view_func):
 
+    @functools.wraps(view_func)
     def wrapper(*args, **kwargs):
         # 1.实现装饰器业务逻辑
         # -----------------1.用户登录成功,查询用户基本信息展示---------------
@@ -42,4 +52,5 @@ def get_user_data(view_func):
 
         # 2.实现被装饰函数的原有功能
         return view_func(*args, **kwargs)
+
     return wrapper

@@ -1,7 +1,7 @@
 from info import constants
 from info.models import News, Category
 from info.modules.index import index_bp
-from flask import current_app, render_template,jsonify, request, g
+from flask import current_app, render_template, jsonify, request, g
 from info.utils.common import get_user_data
 from info.utils.response_code import RET
 
