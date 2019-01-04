@@ -1,9 +1,73 @@
 from info import constants, db
-from info.models import News
+from info.models import News, Comment
 from info.utils.common import get_user_data
 from info.utils.response_code import RET
 from . import news_bp
 from flask import render_template, current_app, jsonify, g, abort, request
+
+
+# POST请求地址: 127.0.0.1:5000/news/news_comment  参数由请求体携带
+@news_bp.route('/news_comment', methods=["POST"])
+@get_user_data
+def news_comment():
+    """发布(主，子)评论的后端接口"""
+
+    """
+    1.获取参数
+        1.1 news_id: 新闻id，user:当前登录的用户对象，comment:新闻评论的内容，parent_id:区分主评论，子评论参数
+    2.参数校验
+        2.1 非空判断
+    3.逻辑处理
+        3.1 根据news_id查询当前新闻对象
+        3.2 创建评论对象，并给各个属性赋值，保存回数据库
+    4.返回值
+    """
+
+    # 1.获取参数
+    params_dict = request.json
+    news_id = params_dict.get("news_id")
+    content = params_dict.get("comment")
+    parent_id = params_dict.get("parent_id")
+    user = g.user
+
+    # 2.参数校验
+    if not all([news_id, content]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    # 3.逻辑处理
+    try:
+        news = News.query.get("news_id")
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+    if not news:
+        return jsonify(errno=RET.NODATA, errmsg="新闻对象不存在")
+
+    # 创建评论对象,并给各个属性赋值,保存回数据库
+    comment_obj = Comment()
+    comment_obj.user_id = user.id
+    comment_obj.news_id = news_id
+    comment_obj.content = content
+    # 区分主评论和子评论
+    if parent_id:
+        # 代表是一条子评论
+        comment_obj.parent_id = parent_id
+
+    # 保存回数据库
+    try:
+        db.session.add(comment_obj)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存评论对象异常")
+
+    # 4.返回值
+    return jsonify(errno=RET.OK, errmsg="发布评论成功", data=comment_obj.to_dict())
 
 
 # POST请求地址: 127.0.0.1:5000/news/news_collect  参数由请求体携带
