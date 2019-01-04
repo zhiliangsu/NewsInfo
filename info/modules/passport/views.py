@@ -9,6 +9,7 @@ from datetime import datetime
 import re
 
 
+# 图片验证码
 # get请求url地址: /passport/image_code?code_id=UUID编码
 @passport_bp.route('/image_code')
 def get_image_code():
@@ -49,6 +50,7 @@ def get_image_code():
     return resp
 
 
+# 短信验证码
 # post请求地址: /passport/sms_code, 参数使用请求体携带
 @passport_bp.route('/sms_code', methods=['POST'])
 def send_sms_code():
@@ -162,6 +164,7 @@ def send_sms_code():
     return jsonify(errno=RET.OK, errmsg="发送短信验证码成功")
 
 
+# 注册
 # post请求地址: /passport/register, 参数使用请求体携带
 @passport_bp.route('/register', methods=['POST'])
 def register():
@@ -250,6 +253,7 @@ def register():
     return jsonify(errno=RET.OK, errmsg="注册成功")
 
 
+# 登录
 # post请求地址: /passport/login, 参数使用请求体携带
 @passport_bp.route('/login', methods=['POST'])
 def login():
@@ -314,6 +318,7 @@ def login():
     return jsonify(errno=RET.OK, errmsg="登录成功")
 
 
+# 退出
 # post请求地址: /passport/logout, 参数使用请求体携带
 @passport_bp.route('/logout', methods=['POST'])
 def logout():
