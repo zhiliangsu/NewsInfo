@@ -44,10 +44,22 @@ def news_detail(news_id):
     # 新闻对象转字典
     news_dict = news_obj.to_dict() if news_obj else None
 
+    # -----------------4.查询当前登录用户是否收藏过当前新闻----------------------
+    # 标识当前用户是否收藏当前新闻, 默认值:false没有收藏
+    is_collected = False
+
+    # user.collection_news: 当前用户对象收藏的新闻列表
+    # news_obj: 当前新闻对象
+    # 判断当前新闻对象是否在当前用户对象的新闻收藏类别中
+    if news_obj in user.collection_news:
+        # 标识当前用户已经收藏该新闻
+        is_collected = True
+
     # 组织响应数据
     data = {
         "user_info": user_dict,
         "click_news_list": news_dict_list,
-        "news": news_dict
+        "news": news_dict,
+        "is_collected": is_collected
     }
     return render_template("news/detail.html", data=data)
