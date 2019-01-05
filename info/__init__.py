@@ -135,5 +135,9 @@ def create_app(config_name):
     from info.modules.news import news_bp
     app.register_blueprint(news_bp)
 
+    # 个人中心模块的蓝图
+    from info.modules.profile import profile_bp
+    app.register_blueprint(profile_bp)
+
     # return app, db, redis_store
     return app
