@@ -4,6 +4,19 @@ from info.utils.response_code import RET
 from . import profile_bp
 
 
+# 127.0.0.1:5000/user/pic_info ---> 展示修改头像页面&头像数据修改
+@profile_bp.route('/pic_info', methods=["POST", "GET"])
+@get_user_data
+def pic_info():
+    """展示修改头像页面&头像数据修改"""
+
+    # GET请求: 返回模板页面,展示修改头像页面
+    if request.method == "GET":
+        return render_template("profile/user_pic_info.html")
+
+    # POST请求: 提交头像数据并修改保存
+
+
 # 127.0.0.1:5000/user/base_info ---> 用户基本资料页面
 @profile_bp.route('/base_info', methods=["POST", "GET"])
 @get_user_data
