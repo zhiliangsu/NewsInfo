@@ -245,7 +245,7 @@ def news_detail(news_id):
 
     # 新闻对象列表转化成字典列表
     news_dict_list = []
-    for news in news_rank_list if news_rank_list else None:
+    for news in news_rank_list if news_rank_list else []:
         news_dict_list.append(news.to_dict())
 
     # -----------------3.根据新闻id查询新闻详情数据展示----------------------
@@ -284,10 +284,34 @@ def news_detail(news_id):
     except Exception as e:
         current_app.logger.error(e)
 
+    # -----------------6.查询当前用户具体对哪几条评论点过赞----------------------
+    comment_like_id_list = []
+    if user:
+        # 1.查询出当前新闻对象的所有评论,取得所有评论的id --> comment_id_list = [1, 2, 3, 4, 5, 6, 7, 8]
+        comment_id_list = [comment.id for comment in comment_list]
+
+        # 2.再通过评论点赞模型(CommentLike)对象查询当前用户点赞了哪几条评论 --> [模型1, 模型2...]
+        try:
+            comment_like_obj_list = CommentLike.query.filter(CommentLike.comment_id.in_(comment_id_list),
+                                                             CommentLike.user_id == user.id).all()
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="查询评论点赞对象异常")
+
+        # 3.遍历上一步的评论点赞模型列表,获取所有点赞过得评论id(comment_like.comment_id)
+        # 点过赞的评论id列表 [2, 4, 8]
+        comment_like_id_list = [comment_like.comment_id for comment_like in comment_like_obj_list]
+
     # 评论对象列表转化成字典列表
     comment_dict_list = []
-    for comment in comment_list if comment_list else None:
-        comment_dict_list.append(comment.to_dict())
+    for comment in comment_list if comment_list else []:
+        comment_dict = comment.to_dict()
+        # 所有评论对象默认都是没有点赞的
+        comment_dict["is_like"] = False
+        # 当前评论的id在用户点赞的id列表中,将is_like标识为True表示点赞
+        if comment.id in comment_like_id_list:
+            comment_dict["is_like"] = True
+        comment_dict_list.append(comment_dict)
 
     # 组织响应数据
     data = {
