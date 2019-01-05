@@ -56,7 +56,7 @@ def comment_like():
     try:
         comment_like_obj = CommentLike.query.filter(CommentLike.comment_id == comment_id,
                                                     CommentLike.user_id == user.id
-                                                    )
+                                                    ).first()
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg="查询评论点赞对象异常")
@@ -79,7 +79,7 @@ def comment_like():
     else:
         # 如果存在评论点赞对象才有资格取消点赞
         if comment_like_obj:
-            db.session.remove(comment_like_obj)
+            db.session.delete(comment_like_obj)
             # 3.4.1 对评论对象上的like_count减一
             comment_obj.like_count -= 1
 
