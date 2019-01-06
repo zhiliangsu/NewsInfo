@@ -1,5 +1,6 @@
 from flask import g, render_template, request, jsonify, session, current_app
-from info import get_user_data, db
+from info import get_user_data, db, constants
+from info.utils.pic_storage import pic_storage
 from info.utils.response_code import RET
 from . import profile_bp
 
@@ -15,6 +16,60 @@ def pic_info():
         return render_template("profile/user_pic_info.html")
 
     # POST请求: 提交头像数据并修改保存
+    """
+    1.获取参数
+        1.1 avatar:上传的图片数据, user:当前用户对象
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.0 调用工具类将图片数据上传带七牛云
+        3.1 将返回的图片名称给予avatar_url赋值，并保存回数据库
+        3.2 将图片的完整url返回
+    4.返回值
+    """
+
+    # 1.1 avatar:上传的图片数据, user:当前用户对象
+    avatar = request.files.get("avatar")
+
+    # ?
+    avatar_data = None
+    try:
+        avatar_data = avatar.read()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="图片二进制数据读取失败")
+
+    # 获取当前登录用户
+    user = g.user
+
+    # 2.1 非空判断
+    if not avatar_data:
+        return jsonify(errno=RET.PARAMERR, errmsg="图片数据为空")
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    # 3.0 调用工具类将图片数据上传带七牛云
+    try:
+        pic_name = pic_storage(avatar_data)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="上传图片到七牛云异常")
+
+    # 3.1 将返回的图片名称给予avatar_url赋值，并保存回数据库
+    user.avatar_url = pic_name
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存用户头像数据异常")
+
+    # 3.2 将图片的完整url返回
+    full_url = constants.QINIU_DOMIN_PREFIX + pic_name
+
+    return jsonify(errno=RET.OK, errmsg="上传图片成功", data={"avatar_url": full_url})
 
 
 # 127.0.0.1:5000/user/base_info ---> 用户基本资料页面
