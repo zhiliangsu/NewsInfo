@@ -1,6 +1,6 @@
 .idea/
 *.py[cod]
-logs/*
+logs/log*
 !.gitkeep
 *.mdj
 migrations
