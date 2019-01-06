@@ -15,7 +15,8 @@
         <h3>头像设置</h3>
         <div class="form-group">
             <label class="label01">当前图像：</label>
-            <img src="../../static/news/images/user_pic.png" alt="用户图片" class="now_user_pic">
+            {# 显示当前用户头像,如果数据库不存在则显示默认图片 #}
+            <img src="{% if data.user.avatar_url %}{{ data.user.avatar_url }}{% else %}../../static/news/images/user_pic.png{% endif %}" alt="用户图片" class="now_user_pic">
         </div>
         <div class="form-group">
             <label>上传图像：</label>

@@ -5,15 +5,69 @@ from info.utils.response_code import RET
 from . import profile_bp
 
 
+# 127.0.0.1:5000/user/pass_info ---> 展示修改密码页面&密码提交修改
+@profile_bp.route('/pass_info', methods=["POST", "GET"])
+@get_user_data
+def pass_info():
+    """展示修改密码页面&密码提交修改"""
+
+    # GET请求: 返回密码修改的页面
+    if request.method == "GET":
+        return render_template("profile/user_pass_info.html")
+
+    # POST请求: 提交新旧密码并进行修改保存到数据库
+    """
+    1.获取参数
+        1.1 old_password: 旧密码，new_password:新密码，user:当前登录的用户对象
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.0 调用user对象上的check_passowrd方法对旧密码进行校验
+        3.1 将新密码赋值给user对象password属性，内部会自动加密
+        3.2 保存回数据库
+    4.返回值
+    """
+
+    # 1.获取参数
+    old_password = request.json.get("old_password")
+    new_password = request.json.get("new_password")
+    user = g.user
+
+    # 2.校验参数
+    if not all([old_password, new_password]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    # 3.逻辑处理
+    if not user.check_passowrd(old_password):
+        return jsonify(errno=RET.PWDERR, errmsg="密码填写错误")
+
+    user.password = new_password
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存用户密码异常")
+
+    return jsonify(errno=RET.OK, errmsg="修改密码成功")
+
+
 # 127.0.0.1:5000/user/pic_info ---> 展示修改头像页面&头像数据修改
 @profile_bp.route('/pic_info', methods=["POST", "GET"])
 @get_user_data
 def pic_info():
     """展示修改头像页面&头像数据修改"""
 
+    # 获取当前登录用户
+    user = g.user
+
     # GET请求: 返回模板页面,展示修改头像页面
     if request.method == "GET":
-        return render_template("profile/user_pic_info.html")
+        return render_template("profile/user_pic_info.html", data={"user": user.to_dict() if user else None})
 
     # POST请求: 提交头像数据并修改保存
     """
@@ -38,9 +92,6 @@ def pic_info():
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg="图片二进制数据读取失败")
-
-    # 获取当前登录用户
-    user = g.user
 
     # 2.1 非空判断
     if not avatar_data:
