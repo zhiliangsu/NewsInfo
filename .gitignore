@@ -5,3 +5,4 @@ logs/log*
 *.mdj
 migrations
 .qiniu*
+info/utils/logs/log*
