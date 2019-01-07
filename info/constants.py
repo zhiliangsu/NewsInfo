@@ -16,8 +16,8 @@ USER_FOLLOWED_MAX_COUNT = 4
 # 用户收藏最多新闻数量
 USER_COLLECTION_MAX_NEWS = 4
 
-# 其他用户每一页最多新闻数量
-OTHER_NEWS_PAGE_MAX_COUNT = 1
+# 用户每一页最多新闻数量
+USER_NEWS_PAGE_MAX_COUNT = 1
 
 # 点击排行展示的最多新闻数据
 CLICK_RANK_MAX_NEWS = 6

@@ -6,6 +6,67 @@ from info.utils.response_code import RET
 from . import profile_bp
 
 
+# 127.0.0.1:5000/user/news_list?p=1
+@profile_bp.route('/news_list')
+@get_user_data
+def news_list():
+    """获取用户的收藏新闻列表数据(分页)"""
+    """
+    1.获取参数
+        1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+    2.校验参数
+        2.1 页码的数据类型判断
+    3.逻辑处理
+        3.0 根据新闻对象News进行分页查询
+        3.1 将查询到新闻对象列表转换成字典列表
+    4.返回值
+    """
+    # 1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+    p = request.args.get("p", 1)
+    user = g.user
+
+    # 2.1 页码的数据类型判断
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        p = 1
+
+    # 3.0 根据新闻对象News进行分页查询
+    news_list = []
+    current_page = 1
+    total_page = 1
+    # 只有用户登录的情况下再查询用户收藏数据
+    if user:
+        try:
+            paginate = News.query.filter(News.user_id == user.id).order_by(News.create_time.desc())\
+                       .paginate(p, constants.USER_NEWS_PAGE_MAX_COUNT, False)
+            # 当前页所有数据
+            news_list = paginate.items
+            # 当前页码
+            current_page = paginate.page
+            # 总页数据
+            total_page = paginate.pages
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="查询用户发布的新闻对象异常")
+
+    # 3.1 将查询到新闻对象列表转换成字典列表
+    news_dict_list = []
+    for news in news_list if news_list else []:
+        news_dict_list.append(news.to_review_dict())
+
+    # 组织返回数据
+    data = {
+        "news_list": news_dict_list,
+        "current_page": current_page,
+        "total_page": total_page
+    }
+
+    # 4.返回值
+    return render_template("profile/user_news_list.html", data=data)
+
+
 # 127.0.0.1:5000/user/news_release ---> 发布新闻的页面展示&发布新闻的逻辑处理
 @profile_bp.route('/news_release', methods=["POST", "GET"])
 @get_user_data

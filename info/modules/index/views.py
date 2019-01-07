@@ -45,7 +45,8 @@ def get_news_list():
     total_page = 1
 
     # 查询条件列表
-    filter_list = []
+    # 默认查询条件：News.status == 0，查询审核通过的这个一类新闻
+    filter_list = [News.status == 0]
     if cid != 1:
         # 将查询条件添加到列表中
         filter_list.append(News.category_id == cid)
