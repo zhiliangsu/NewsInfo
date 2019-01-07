@@ -1,8 +1,38 @@
 from flask import g, render_template, request, jsonify, session, current_app
 from info import get_user_data, db, constants
+from info.models import Category
 from info.utils.pic_storage import pic_storage
 from info.utils.response_code import RET
 from . import profile_bp
+
+
+# 127.0.0.1:5000/user/news_release ---> 发布新闻的页面展示&发布新闻的逻辑处理
+@profile_bp.route('/news_release', methods=["POST", "GET"])
+@get_user_data
+def news_release():
+    """发布新闻的页面展示&发布新闻的逻辑处理"""
+
+    # GET请求: 发布新闻的页面展示,同时将分类数据返回
+    if request.method == "GET":
+        # 1.查询所有分类数据
+        categories = []
+        try:
+            categories = Category.query.all()
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="查询分类对象异常")
+
+        # 2.将分类列表对象转换成字典对象
+        category_dict_list = []
+        for category in categories if categories else []:
+            category_dict_list.append(category.to_dict())
+
+        # 移除最新分类
+        category_dict_list.pop(0)
+
+        return render_template("profile/user_news_release.html", data={"categories": category_dict_list})
+
+    # POST请求: 发布新闻的逻辑处理
 
 
 # 127.0.0.1:5000/user/collection?p=1
