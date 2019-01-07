@@ -33,7 +33,10 @@ $(function () {
                 if (resp.errno == "0") {
                     // 修改成功
                     alert("修改成功")
-                    window.location.reload()
+                    // window.location.reload()
+                    // 修改成功,应该退出登录
+                    logout()
+                    top.location.reload()
                 }else {
                     alert(resp.errmsg)
                 }
