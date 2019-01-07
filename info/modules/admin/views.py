@@ -1,10 +1,65 @@
 import time
 from flask import request, render_template, jsonify, current_app, session, redirect, url_for, g
-from info import get_user_data
+from info import get_user_data, constants
 from info.models import User
 from info.utils.response_code import RET
 from . import admin_bp
 from datetime import datetime, timedelta
+
+
+# 127.0.0.1:5000/admin/user_list?p=1
+@admin_bp.route('/user_list')
+def user_list():
+    """展示用户列表页面数据"""
+    """
+        1.获取参数
+            1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+        2.校验参数
+            2.1 页码的数据类型判断
+        3.逻辑处理
+            3.0 根据User.query.filter(条件用户是非管理员即可) 进行分页查询
+            3.1 将查询到用户对象列表转换成字典列表
+        4.返回值
+    """
+
+    # 1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+    p = request.args.get("p", 1)
+
+    # 2.1 页码的数据类型判断
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        p = 1
+
+    # 3.0 根据User.query.filter(条件用户是非管理员即可) 进行分页查询
+    user_list = []
+    current_page = 1
+    total_page = 1
+
+    try:
+        paginate = User.query.filter(User.is_admin == False).order_by(User.create_time.desc())\
+                    .paginate(p, constants.ADMIN_USER_PAGE_MAX_COUNT, False)
+        user_list = paginate.items
+        current_page = paginate.page
+        total_page = paginate.pages
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户列表对象异常")
+
+    # 3.1 将查询到用户对象列表转换成字典列表
+    user_dict_list = []
+    for user in user_list if user_list else []:
+        user_dict_list.append(user.to_admin_dict())
+
+    # 组织返回数据
+    data = {
+        "users": user_dict_list,
+        "current_page": current_page,
+        "total_page": total_page
+    }
+
+    return render_template("admin/user_list.html", data=data)
 
 
 # 127.0.0.1:5000/admin/user_count
