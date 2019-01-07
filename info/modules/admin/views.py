@@ -7,6 +7,27 @@ from . import admin_bp
 from datetime import datetime, timedelta
 
 
+# 127.0.0.1：5000/admin/news_review_detail?news_id=1
+@admin_bp.route('/news_review_detail', methods=["POST", "GET"])
+def news_review_detail():
+    """返回新闻审核详情页面&新闻审核的业务逻辑"""
+
+    # GET请求: 返回新闻审核的详情页面
+    if request.method == "GET":
+
+        news_id = request.args.get("news_id")
+        # 查询新闻对象
+        news = None
+        try:
+            news = News.query.get(news_id)
+        except Exception as e:
+            current_app.logger.error(e)
+
+        return render_template("admin/news_review_detail.html", data={"news": news.to_dict() if news else None})
+
+    # POST请求:新闻审核的业务逻辑
+
+
 # 127.0.0.1:5000/admin/news_review?p=1
 @admin_bp.route('/news_review')
 def news_review():
