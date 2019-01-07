@@ -1,10 +1,75 @@
 import time
 from flask import request, render_template, jsonify, current_app, session, redirect, url_for, g
 from info import get_user_data, constants
-from info.models import User
+from info.models import User, News
 from info.utils.response_code import RET
 from . import admin_bp
 from datetime import datetime, timedelta
+
+
+# 127.0.0.1:5000/admin/news_review?p=1
+@admin_bp.route('/news_review')
+def news_review():
+    """展示新闻审核页面数据"""
+    """
+        1.获取参数
+            1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+        2.校验参数
+            2.1 页码的数据类型判断
+        3.逻辑处理
+            3.0 根据News.query.filter(查询条件).order_by(新闻创建时间降序).paginate(当前页码，每一页多少条数据，False)
+                查询条件1：查询未审核&审核未通过的新闻
+                查询条件2（非必须的）：标题是否包含搜索关键字key
+            3.1 将查询到新闻对象列表转换成字典列表
+        4.返回值
+    """
+
+    # 1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+    p = request.args.get("p", 1)
+    keyword = request.args.get("keywords")
+
+    # 2.1 页码的数据类型判断
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        p = 1
+
+    # 3.0 News.query.filter(查询条件).order_by(新闻创建时间降序)进行分页查询
+    news_list = []
+    current_page = 1
+    total_page = 1
+
+    # 条件列表: 默认条件 --> 查询未审核&审核未通过的新闻
+    filter_list = [News.status != 0]
+    # 关键字搜索
+    if keyword:
+        # 添加标题是否包含搜索关键字key条件
+        filter_list.append(News.title.contains(keyword))
+
+    try:
+        paginate = News.query.filter(*filter_list).order_by(News.create_time.desc())\
+                    .paginate(p, constants.ADMIN_NEWS_PAGE_MAX_COUNT, False)
+        news_list = paginate.items
+        current_page = paginate.page
+        total_page = paginate.pages
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户列表对象异常")
+
+    # 3.1 将查询到用户对象列表转换成字典列表
+    news_dict_list = []
+    for news in news_list if news_list else []:
+        news_dict_list.append(news.to_review_dict())
+
+    # 组织返回数据
+    data = {
+        "news_list": news_dict_list,
+        "current_page": current_page,
+        "total_page": total_page
+    }
+
+    return render_template("admin/news_review.html", data=data)
 
 
 # 127.0.0.1:5000/admin/user_list?p=1
