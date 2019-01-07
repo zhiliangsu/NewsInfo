@@ -329,4 +329,7 @@ def logout():
     session.pop("mobile", None)
     session.pop("nick_name", None)
 
+    # 注意: 管理员用户退出登录的时候需要删除数据
+    session.pop("is_admin", False)
+
     return jsonify(errno=RET.OK, errmsg="退出登录成功")

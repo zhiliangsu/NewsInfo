@@ -19,6 +19,19 @@ def admin_login():
 
     # GET请求: 返回管理员登录的模板
     if request.method == "GET":
+
+        # 优化: 当管理员用户已登录,再次访问/admin/login接口的时候,我们应该直接引导到管理员的首页
+
+        # 获取当前登录用户的id
+        user_id = session.get("user_id")
+        # 登录的用户是管理员
+        is_admin = session.get("is_admin")
+
+        # 用户登录了,而且是管理员
+        if user_id and is_admin:
+            # 直接引导到管理员首页
+            return redirect(url_for("admin.admin_index"))
+
         return render_template("admin/login.html")
 
     # POST请求: 后台登录的逻辑处理
