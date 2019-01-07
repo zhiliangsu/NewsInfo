@@ -20,7 +20,8 @@ manager.add_command("db", MigrateCommand)
 
 """
 使用方法:
-    python manage.py create_admin -n "admin" -p "admin"
+    创建管理员: python manage.py create_admin -n "admin" -p "admin"
+    删除管理员: python manage.py create_admin -d "admin"
 """
 
 
