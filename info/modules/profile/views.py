@@ -1,6 +1,6 @@
 from flask import g, render_template, request, jsonify, session, current_app
 from info import get_user_data, db, constants
-from info.models import Category
+from info.models import Category, News
 from info.utils.pic_storage import pic_storage
 from info.utils.response_code import RET
 from . import profile_bp
@@ -33,6 +33,80 @@ def news_release():
         return render_template("profile/user_news_release.html", data={"categories": category_dict_list})
 
     # POST请求: 发布新闻的逻辑处理
+    """
+    1.获取参数(表单提取数据)
+        1.1 title:新闻标题，cid:新闻分类id，digest:新闻的摘要，
+            index_image:新闻主图片，content:新闻的内容，user:当前用户对象, source:新闻来源，个人发布
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.0 新闻主图片保存到七牛云
+        3.1 创建新闻对象，给各个属性赋值，保存回数据库
+    4.返回值
+    """
+
+    # 1.获取参数(表单提取数据)
+    params_dict = request.form
+    title = params_dict.get("title")
+    cid = params_dict.get("category_id")
+    digest = params_dict.get("digest")
+    content = params_dict.get("content")
+    index_image = request.files.get("index_image")
+    user = g.user
+    source = "个人发布"
+
+    # 2.校验参数
+    if not all([title, cid, digest, content, index_image]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    # cid类型转换
+    try:
+        cid = int(cid)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="分类id格式错误")
+
+    # 3.0 新闻主图片保存到七牛云
+    pic_data = None
+
+    # 读取用户发布新闻时上传的图片数据
+    try:
+        pic_data = index_image.read()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="读取图片数据异常")
+
+    # 把图片上传到七牛云
+    try:
+        pic_name = pic_storage(pic_data)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="上传图片到七牛云异常")
+
+    # 3.1 创建新闻对象，给各个属性赋值，保存回数据库
+    news = News()
+    news.title = title
+    news.category_id = cid
+    news.digest = digest
+    news.content = content
+    news.index_image_url = constants.QINIU_DOMIN_PREFIX + pic_name
+    news.source = source
+    news.user_id = user.id
+    # 状态0: 已通过  状态1: 审核中  状态-1: 未通过
+    news.status = 1
+
+    try:
+        db.session.add(news)
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存新闻对象异常")
+
+    return jsonify(errno=RET.OK, errmsg="新闻发布成功")
 
 
 # 127.0.0.1:5000/user/collection?p=1
