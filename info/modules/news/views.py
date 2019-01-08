@@ -6,6 +6,79 @@ from . import news_bp
 from flask import render_template, current_app, jsonify, g, abort, request
 
 
+# POST请求地址: 127.0.0.1:5000/news/followed_user  参数由请求体携带
+@news_bp.route('/followed_user', methods=["POST"])
+@get_user_data
+def followed_user():
+    """关注/取消关注"""
+    """
+    1.获取参数
+        1.1 user:当前登录的用户, user_id:新闻作者id，action:关注、取消关注行为
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.0 根据user_id查询当前新闻的`作者对象`
+        3.1 关注：
+            1.author作者添加到当前用户的关注列表中:
+              user.followed.append(author)
+    
+            2.user当前用户添加作者粉丝列表:
+              author.followers.append(user)
+    
+        3.2 取消关注：author作者从到当前用户的关注列表中移除 or user当前用户从添加作者粉丝列表移除
+        3.3 将上述修改操作保存回数据库
+    4.返回值
+    """
+
+    # 1.获取参数
+    params_dict = request.json
+    user_id = params_dict.get("user_id")
+    action = params_dict.get("action")
+    user = g.user
+
+    # 2.参数校验
+    if not all([user_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
+    if action not in ["follow", "unfollow"]:
+        return jsonify(errno=RET.PARAMERR, errmsg="参数错误")
+
+    # 3.0 根据user_id查询当前新闻的`作者对象`
+    try:
+        author = User.query.get(user_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户对象异常")
+
+    if not author:
+        return jsonify(errno=RET.NODATA, errmsg="作者不存在")
+
+    if action == "follow":
+        # 作者已经在用户的关注列表中
+        if author in user.followed:
+            return jsonify(errno=RET.DATAEXIST, errmsg="已经关注不能重复关注")
+        else:
+            user.followed.append(author)
+    else:
+        # 只有作者已经在用户的关注列表中才能取消关注
+        if author in user.followed:
+            user.followed.remove(author)
+
+    # 将数据提交数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存关注信息对象异常")
+
+    # 4.返回值
+    return jsonify(errno=RET.OK, errmsg="OK")
+
+
 # POST请求地址: 127.0.0.1:5000/news/comment_like  参数由请求体携带
 @news_bp.route('/comment_like', methods=["POST"])
 @get_user_data
