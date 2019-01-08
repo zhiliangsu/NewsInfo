@@ -7,6 +7,61 @@ from . import admin_bp
 from datetime import datetime, timedelta
 
 
+# 127.0.0.1:5000/admin/news_edit?p=1
+@admin_bp.route('/news_edit')
+def news_edit():
+    """展示新闻版式编辑页面数据"""
+    """
+        1.获取参数
+            1.1 p:查询的页码，默认值：1 表示查询第一页的数据, user：当前用户对象
+        2.校验参数
+            2.1 页码的数据类型判断
+        3.逻辑处理
+            3.0 根据News.query.filter(查询条件).order_by(新闻创建时间降序).paginate(当前页码，每一页多少条数据，False)
+                查询条件1（非必须的）：标题是否包含搜索关键字key
+            3.1 将查询到新闻对象列表转换成字典列表
+        4.返回值
+    """
+    p = request.args.get("p", 1)
+    keyword = request.args.get("keywords")
+
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        p = 1
+
+    filter_list = []
+    if keyword:
+        filter_list.append(News.title.contains(keyword))
+
+    news_list = []
+    current_page = 1
+    total_page = 1
+
+    try:
+        paginate = News.query.filter(*filter_list).order_by(News.create_time.desc())\
+                    .paginate(p, constants.ADMIN_NEWS_EDIT_PAGE_MAX_COUNT, False)
+        news_list = paginate.items
+        current_page = paginate.page
+        total_page = paginate.pages
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+    news_dict_list = []
+    for news in news_list if news_list else []:
+        news_dict_list.append(news.to_basic_dict())
+
+    data = {
+        "news_list": news_dict_list,
+        "current_page": current_page,
+        "total_page": total_page
+    }
+
+    return render_template("admin/news_edit.html", data=data)
+
+
 # 127.0.0.1：5000/admin/news_review_detail?news_id=1
 @admin_bp.route('/news_review_detail', methods=["POST", "GET"])
 def news_review_detail():
