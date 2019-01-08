@@ -8,6 +8,87 @@ from . import admin_bp
 from datetime import datetime, timedelta
 
 
+# 127.0.0.1:5000/admin/alter_category
+@admin_bp.route('/alter_category', methods=["POST"])
+def alter_category():
+    """修改&新增分类"""
+    """
+    1.获取参数
+        1.1 category_name:分类名称，id:分类id（非必传）
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.0 根据id判断分类是否存在，分类编辑
+        3.1 分类id不存在，新增分类
+        3.2 保存回数据库
+    4.返回值
+    """
+    category_name = request.json.get("name")
+    category_id = request.json.get("id")
+
+    if not category_name:
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    if category_id:
+        # 分类编辑
+        # 1.查询对应分类对象
+        try:
+            category = Category.query.get(category_id)
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="查询分类对象异常")
+        if not category:
+            return jsonify(errno=RET.NODATA, errmsg="分类对象不存在")
+
+        # 2.修改分类对象的名称
+        category.name = category_name
+    else:
+        # 新增分类
+        category = Category()
+        category.name = category_name
+        db.session.add(category)
+
+    # 将上述操作保存回数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存分类对象异常")
+
+    return jsonify(errno=RET.OK, errmsg="OK")
+
+
+# 127.0.0.1:5000/admin/categories
+@admin_bp.route('/categories')
+def get_categories():
+    """查询分类数据展示"""
+
+    # 2.查询所有分类数据,选中新闻对应的分类
+    categories = []  # type:Category
+    try:
+        categories = Category.query.all()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询分类对象异常")
+
+    # 分类对象列表转字典列表
+    category_dict_list = []
+    for category in categories if categories else []:
+        # 分类对象转换成字典
+        category_dict = category.to_dict()
+        category_dict_list.append(category_dict)
+
+    # 移除最新分类
+    category_dict_list.pop(0)
+
+    data = {
+        "categories": category_dict_list
+    }
+
+    return render_template("admin/news_type.html", data=data)
+
+
 # 127.0.0.1：5000/admin/news_edit_detail?news_id=1
 @admin_bp.route('/news_edit_detail', methods=["POST", "GET"])
 def news_edit_detail():
