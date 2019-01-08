@@ -1,10 +1,138 @@
 import time
 from flask import request, render_template, jsonify, current_app, session, redirect, url_for, g
 from info import get_user_data, constants, db
-from info.models import User, News
+from info.models import User, News, Category
+from info.utils.pic_storage import pic_storage
 from info.utils.response_code import RET
 from . import admin_bp
 from datetime import datetime, timedelta
+
+
+# 127.0.0.1：5000/admin/news_edit_detail?news_id=1
+@admin_bp.route('/news_edit_detail', methods=["POST", "GET"])
+def news_edit_detail():
+    """返回新闻版式编辑详情页面&新闻版式编辑的业务逻辑"""
+
+    # GET请求: 返回新闻版式编辑详情页面
+    if request.method == "GET":
+        # 1.根据新闻id查询新闻对象
+        news_id = request.args.get("news_id")
+        # 查询新闻对象
+        news = None  # type:News
+        if news_id:
+            try:
+                news = News.query.get(news_id)
+            except Exception as e:
+                current_app.logger.error(e)
+                return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+        news_dict = news.to_dict() if news else None
+
+        # 2.查询所有分类数据,选中新闻对应的分类
+        categories = []  # type:Category
+        try:
+            categories = Category.query.all()
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg="查询分类对象异常")
+
+        # 分类对象列表转字典列表
+        category_dict_list = []
+        for category in categories if categories else []:
+            # 分类对象转换成字典
+            category_dict = category.to_dict()
+            # 默认不选择任何分类
+            category_dict["is_selected"] = False
+            # 分类id和当前新闻的对应分类id相等表示需要选中
+            if category.id == news.category_id:
+                category_dict["is_selected"] = True
+
+            category_dict_list.append(category_dict)
+
+        # 移除最新分类
+        category_dict_list.pop(0)
+
+        # 组织返回数据
+        data = {
+            "news": news_dict,
+            "categories": category_dict_list
+        }
+
+        return render_template("admin/news_edit_detail.html", data=data)
+
+    # POST请求:新闻版式编辑的业务逻辑
+    """
+    1.获取参数
+        1.1 news_id:新闻id, title:新闻标题， category_id:分类id，
+            digest:新闻摘要，index_image:新闻主图片（非必传），content:新闻的内容
+    2.校验参数
+        2.1 非空判断
+    3.逻辑处理
+        3.0 根据新闻id查询对应新闻对象
+        3.1 如果新闻主图片存在，调用工具类将图片上传到七牛云
+        3.2 新闻对象各个属性重新赋值，保存回数据库
+    4.返回值
+    """
+    # 前端通过ajaxsubmit方法提交的数据，使用form表单接受
+    # 1.1 news_id:新闻id, title:新闻标题， category_id:分类id，
+    #     digest:新闻摘要，index_image:新闻主图片（非必传），content:新闻的内容
+    params_dict = request.form
+    news_id = params_dict.get("news_id")
+    title = params_dict.get("title")
+    category_id = params_dict.get("category_id")
+    digest = params_dict.get("digest")
+    content = params_dict.get("content")
+    index_image = request.files.get("index_image")
+
+    # 2.1 非空判断
+    if not all([news_id, title, category_id, digest, content]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    # 3.1 如果新闻主图片存在，调用工具类将图片上传到七牛云
+    image_data = None
+    if index_image:
+        try:
+            image_data = index_image.read()
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.NODATA, errmsg="没有图片数据")
+
+    image_name = None
+    if image_data:
+        try:
+            image_name = pic_storage(image_data)
+        except Exception as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.THIRDERR, errmsg="上传图片到七牛云失败")
+
+    # 3.1 根据新闻id查询对应新闻对象
+    try:
+        news = News.query.get(news_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+    if not news:
+        return jsonify(errno=RET.NODATA, errmsg="新闻不存在")
+
+    # 3.2 新闻对象各个属性重新赋值
+    news.title = title
+    news.digest = digest
+    news.content = content
+    news.category_id = category_id
+    # 新闻主图片上传成功后才需要赋值
+    if image_name:
+        news.index_image_url = constants.QINIU_DOMIN_PREFIX + image_name
+
+    # 3.3 保存回数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存新闻对象异常")
+
+    return jsonify(errno=RET.OK, errmsg="编辑新闻成功")
 
 
 # 127.0.0.1:5000/admin/news_edit?p=1
