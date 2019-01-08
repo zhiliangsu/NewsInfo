@@ -1,6 +1,6 @@
 import time
 from flask import request, render_template, jsonify, current_app, session, redirect, url_for, g
-from info import get_user_data, constants
+from info import get_user_data, constants, db
 from info.models import User, News
 from info.utils.response_code import RET
 from . import admin_bp
@@ -26,6 +26,62 @@ def news_review_detail():
         return render_template("admin/news_review_detail.html", data={"news": news.to_dict() if news else None})
 
     # POST请求:新闻审核的业务逻辑
+    """
+    1.获取参数
+        1.1 news_id:新闻id，action:审核的行为，reason:拒绝原因
+    2.校验参数
+        2.1 非空判断
+        2.2 action in ["accept", "reject"]
+    3.逻辑处理
+        3.0 根据新闻id查询对应新闻对象，新闻存在再去审核
+        3.1 审核通过：将news对象的status属性修改为：0
+        3.2 审核不通过：将news对象的status属性修改为：-1，同时添加拒绝原因
+        3.3 保存回数据库
+    4.返回值
+    """
+    # 1.1 news_id:新闻id，action:审核的行为，reason:拒绝原因(非必须要传的参数)
+    news_id = request.json.get("news_id")
+    action = request.json.get("action")
+
+    # 2.1 非空判断
+    if not all([news_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg="参数不足")
+
+    # 2.2 action in ["accept", "reject"]
+    if action not in ["accept", "reject"]:
+        return jsonify(errno=RET.PARAMERR, errmsg="参数错误")
+
+    # 3.0 根据新闻id查询对应新闻对象，新闻存在再去审核
+    try:
+        news = News.query.get(news_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询新闻对象异常")
+
+    if not news:
+        return jsonify(errno=RET.NODATA, errmsg="新闻不存在")
+
+    # 3.1 审核通过：将news对象的status属性修改为：0
+    if action == "accept":
+        news.status = 0
+    # 3.2 审核不通过：将news对象的status属性修改为：-1，同时添加拒绝原因
+    else:
+        reason = request.json.get("reason")
+        if reason:
+            news.status = -1
+            news.reason = reason
+        else:
+            return jsonify(errno=RET.PARAMERR, errmsg="拒绝原因不能为空")
+
+    # 3.3 保存回数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg="保存新闻对象异常")
+
+    return jsonify(errno=RET.OK, errmsg="OK")
 
 
 # 127.0.0.1:5000/admin/news_review?p=1

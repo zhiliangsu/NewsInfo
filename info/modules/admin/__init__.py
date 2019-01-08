@@ -12,7 +12,7 @@ from info.modules.admin.views import *
 def is_admin_user():
     """判断是否是管理员用户"""
 
-    print(request.url)
+    # print(request.url)
     if request.url.endswith("/admin/login"):
         # 当第一次访问管理员登录接口,不拦截
         # 当登录管理员登录接口,不拦截
