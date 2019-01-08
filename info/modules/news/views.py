@@ -1,5 +1,5 @@
 from info import constants, db
-from info.models import News, Comment, CommentLike
+from info.models import News, Comment, CommentLike, User
 from info.utils.common import get_user_data
 from info.utils.response_code import RET
 from . import news_bp
@@ -249,7 +249,7 @@ def news_detail(news_id):
         news_dict_list.append(news.to_dict())
 
     # -----------------3.根据新闻id查询新闻详情数据展示----------------------
-    news_obj = None
+    news_obj = None  # type:News
     if news_id:
         try:
             news_obj = News.query.get(news_id)
@@ -313,12 +313,40 @@ def news_detail(news_id):
             comment_dict["is_like"] = True
         comment_dict_list.append(comment_dict)
 
+    # -----------------7.查询当前登录用户是否关注新闻作者----------------------
+    # 标识当前用户是否关注新闻作者, 默认值:false没有关注
+    is_followed = False
+
+    """
+    author: 作者
+    user: 当前登录用户
+    author.followers: 作者的粉丝列表
+    user.followed: 用户的关注列表
+    
+    当前登录用户关注新闻作者有两种表现形式:
+        1.当前用户在作者的粉丝列表中: user in author.followers
+        2.作者在用户的关注列表中: author in user.followed
+    """
+
+    # 1.查询当前作者
+    try:
+        author = User.query.filter(User.id == news_obj.user_id).first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg="查询用户对象异常")
+
+    if user and author:
+        # 作者在用户的关注列表中
+        if author in user.followed:
+            is_followed = True
+
     # 组织响应数据
     data = {
         "user_info": user_dict,
         "click_news_list": news_dict_list,
         "news": news_dict,
         "is_collected": is_collected,
-        "comments": comment_dict_list
+        "comments": comment_dict_list,
+        "is_followed": is_followed
     }
     return render_template("news/detail.html", data=data)
