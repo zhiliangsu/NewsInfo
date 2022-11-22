@@ -22,7 +22,7 @@ mysql-connector-python==8.0.13
 parso==0.3.1
 pickleshare==0.7.5
 pid==2.2.0
-Pillow==5.4.0
+Pillow==9.3.0
 prompt-toolkit==2.0.7
 protobuf==3.6.1
 Pygments==2.3.1
